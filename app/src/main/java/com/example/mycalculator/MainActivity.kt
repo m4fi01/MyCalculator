@@ -14,6 +14,7 @@ class MainActivity : AppCompatActivity() {
     var lastOperator = false
     var lastEqual = false
     var priorityRequired = 0
+    var lastEqualPosition = 0
     var values : MutableList<String> = mutableListOf()
     val operators = listOf<String>("×","+","-","÷")
 
@@ -38,7 +39,7 @@ class MainActivity : AppCompatActivity() {
 
     fun clearClicked(view : View) {
         calcText.text=""
-
+        lastEqualPosition = 0
         reset()
     }
 
@@ -83,8 +84,8 @@ class MainActivity : AppCompatActivity() {
         if(lastDigit) {
             interpretValues()
             calculate()
-
-            calcText.text = values[0]
+            lastEqualPosition = calcText.text.length +2
+            calcText.append("=\n"+values[0])
             reset()
             lastEqual = true
             lastDigit = true
@@ -92,13 +93,13 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun interpretValues(){
-        var i = calcText.text.iterator()
+        var i = calcText.text.toList().listIterator(lastEqualPosition)
         var value : String= ""
         var c: String = ""
 
         //reading the text and separating numbers and operators, then putting them in #values to calculate later
         while(i.hasNext()){
-            c = i.nextChar().toString()
+            c = i.next().toString()
             if(c !in operators)
                 value+=c
             else {
@@ -115,7 +116,7 @@ class MainActivity : AppCompatActivity() {
         var i = 0
         var changed = false
         while (i < values.size){
-
+            //looking for the operator of higher value
             if(priorityRequired > 0){
                 while (values[i] !in listOf("×","÷"))
                     i++
@@ -137,6 +138,7 @@ class MainActivity : AppCompatActivity() {
                 values.removeAt(i)
                 values.removeAt(i)
                 i--
+                //reset index to 0 if there was an calculation with priority
                 if(changed){
                     changed = false
                     i = 0
