@@ -1,10 +1,14 @@
 package com.example.mycalculator
 
+import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.view.View
+import android.view.animation.AlphaAnimation
+import android.view.animation.Animation
 import android.widget.Button
 import android.widget.Toast
+import androidx.annotation.RequiresApi
 import kotlinx.android.synthetic.main.activity_main.*
 
 class MainActivity : AppCompatActivity() {
@@ -14,7 +18,6 @@ class MainActivity : AppCompatActivity() {
     var lastOperator = false
     var lastEqual = false
     var priorityRequired = 0
-    var lastEqualPosition = 0
     var values : MutableList<String> = mutableListOf()
     val operators = listOf<String>("×","+","-","÷")
 
@@ -26,7 +29,9 @@ class MainActivity : AppCompatActivity() {
 
     }
 
+    @RequiresApi(Build.VERSION_CODES.M)
     fun digitClicked(view : View){
+        calcText.setTextColor(getColor(R.color.lightGrey))
         lastDigit=true
         lastOperator=false
         if(lastEqual) {
@@ -39,11 +44,13 @@ class MainActivity : AppCompatActivity() {
 
     fun clearClicked(view : View) {
         calcText.text=""
-        lastEqualPosition = 0
+        prevCalcText.text=""
         reset()
     }
 
+    @RequiresApi(Build.VERSION_CODES.M)
     fun operatorClicked(view : View){
+        calcText.setTextColor(getColor(R.color.lightGrey))
         if(calcText.text.isEmpty()){
             if((view as Button) == btnPlus || view == btnMinus){
                 calcText.append(view.text)
@@ -80,12 +87,27 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.M)
     fun equalClicked(view : View){
         if(lastDigit) {
+            prevCalcText.append(calcText.text)
             interpretValues()
             calculate()
-            lastEqualPosition = calcText.text.length +2
-            calcText.append("=\n"+values[0])
+            prevCalcText.append("=\n")
+
+            //adding Animations
+            val anim = AlphaAnimation(1.0f, 0.0f)
+            anim.duration = 200
+            anim.repeatCount = 1
+            anim.repeatMode = Animation.REVERSE
+            anim.setAnimationListener(object : Animation.AnimationListener {
+                override fun onAnimationEnd(animation: Animation?) {calcText.setTextColor(getColor(R.color.lightGreen)) }
+                override fun onAnimationStart(animation: Animation?) { }
+                override fun onAnimationRepeat(animation: Animation?) {}
+            })
+            calcText.text = values[0]
+            calcText.startAnimation(anim)
+
             reset()
             lastEqual = true
             lastDigit = true
@@ -93,7 +115,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun interpretValues(){
-        var i = calcText.text.toList().listIterator(lastEqualPosition)
+        var i = calcText.text.iterator()
         var value : String= ""
         var c: String = ""
 
