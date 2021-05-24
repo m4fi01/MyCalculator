@@ -95,7 +95,7 @@
                 android:id="@+id/btnLBracket"
                 android:layout_width="match_parent"
                 android:textSize="25sp"
-                android:onClick="digitClicked"
+                android:onClick="bracketsClicked"
                 android:layout_height="match_parent"
                 android:layout_weight="25"
                 android:background="@drawable/operator_btn"
@@ -109,7 +109,7 @@
                 android:layout_height="match_parent"
                 android:layout_weight="25"
                 android:textSize="25sp"
-                android:onClick="digitClicked"
+                android:onClick="bracketsClicked"
                 android:text=")"
                 android:background="@drawable/operator_btn"
                 android:layout_margin="5sp">

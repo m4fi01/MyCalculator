@@ -16,8 +16,9 @@ class MainActivity : AppCompatActivity() {
     var lastComma = false
     var lastOperator = false
     var lastEqual = false
-    var priorityRequired = 0
-    var values : MutableList<String> = mutableListOf()
+    var nrBrackets = 0
+    var rightBrackets= 0
+    var leftBrackets = 0
     val operators = listOf<String>("×","+","-","÷")
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -38,7 +39,6 @@ class MainActivity : AppCompatActivity() {
             lastEqual = false
         }
         calcText.append((view as Button).text)
-
     }
 
     fun clearClicked(view : View) {
@@ -58,9 +58,6 @@ class MainActivity : AppCompatActivity() {
         }
         else if(lastDigit && !lastOperator){
             calcText.append((view as Button).text)
-            if(view.text in listOf("×","÷")){
-                priorityRequired++
-            }
             lastOperator = true
             lastDigit = false
             lastEqual = false
@@ -72,10 +69,35 @@ class MainActivity : AppCompatActivity() {
         if(!calcText.text.isEmpty()) {
             val text = calcText.text.toString()
             calcText.text = text.substring(0, text.length - 1)
+            val c = text[text.length-1].toString()
+            if(c=="(")
+                rightBrackets--
+            else if (c in operators)
+                lastOperator= true
+            else{
+                lastDigit=true
+                lastOperator=false
+            }
+
         }
         else {
             Toast.makeText(this, "nothing to delete", Toast.LENGTH_SHORT).show()
             reset()
+        }
+    }
+
+    fun bracketsClicked(view : View){
+        if((view as Button).text == "(") {
+            calcText.append("(")
+            rightBrackets++
+        } else{
+            if(leftBrackets < rightBrackets){
+                calcText.append(")")
+                leftBrackets++
+            }
+            else{
+                Toast.makeText(this,"please use an opening bracket first",Toast.LENGTH_SHORT).show()
+            }
         }
     }
 
@@ -89,14 +111,40 @@ class MainActivity : AppCompatActivity() {
     @RequiresApi(Build.VERSION_CODES.N)
     fun equalClicked(view : View){
         if(lastDigit) {
+            //checking if the brackets are closed
+            if(rightBrackets != leftBrackets){
+                Toast.makeText(this,"please close all the brackets first",Toast.LENGTH_SHORT).show()
+                return
+            }
+            nrBrackets = rightBrackets
             prevCalcText.append(calcText.text)
-            interpretValues()
-            calculate()
+            val e = Expression(calcText.text.toString())
+            e.interpretValues()
+
+            //solving brackets
+            while(nrBrackets > 0){
+                var tempText = e.text
+                val from = e.text.indexOfLast {it.toString()=="("}
+                tempText = e.text.substring(from,tempText.length)
+                val to = tempText.indexOfFirst {it.toString()==")"} + from
+                tempText = e.text.substring(from+1 until to)
+
+                val subExpression = Expression(tempText)
+                subExpression.interpretValues()
+                subExpression.calculate()
+
+                e.adjustText(subExpression.res,from,to)
+
+                nrBrackets--
+            }
+
+            e.calculate()
             prevCalcText.append("=\n")
-            //adding animation
+            //adding little animation
             val anim = AnimationUtils.loadAnimation(this,R.anim.slide_up)
             calcText.startAnimation(anim)
-            calcText.text = fmt(values[0].toDouble())
+
+            calcText.text = fmt(e.values[0].toDouble())
             calcText.setTextColor(getColor(R.color.lightGreen))
 
             reset()
@@ -105,89 +153,24 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    fun interpretValues(){
-        var i = calcText.text.iterator()
-        var value : String= ""
-        var c: String = ""
-        var prevOperator = false
-        //checking if the first number starts with a minus or plus
-        if(calcText.text[0].toString() in listOf("+","-"))
-            prevOperator = true
-        //reading the text and separating numbers and operators, then putting them in #values to calculate later
-        while(i.hasNext()){
-            c = i.next().toString()
-            if(c in operators) {
-                if(prevOperator){
-                    value+=c
-                } else {
-                    values.add(value)
-                    values.add(c)
-                    value = ""
-                    prevOperator = true
-                }
-            }
-            else {
-                prevOperator = false
-                value+=c
-            }
-        }
-        values.add(value)
-    }
-
-    fun calculate(){
-        var res = values[0]
-        var i = 0
-        var changed = false
-        while (i < values.size){
-            //looking for the operator of higher value
-            if(priorityRequired > 0){
-                while (values[i] !in listOf("×","÷"))
-                    i++
-                priorityRequired--
-                changed = true
-            }
-
-            val value = values[i]
-            if(value in operators){
-                val a = values[i-1].toDouble()
-                val b = values[i+1].toDouble()
-                when(value){
-                    "+" -> res = (a+b).toString()
-                    "-" -> res = (a-b).toString()
-                    "×" -> res = (a*b).toString()
-                    "÷" -> res = (a/b).toString()
-                }
-                values[i-1] = res
-                values.removeAt(i)
-                values.removeAt(i)
-                i--
-                //reset index to 0 if there was an calculation with priority
-                if(changed){
-                    changed = false
-                    i = 0
-                }
-            }
-            i++
-        }
-    }
-
-    fun reset(){
+    private fun reset(){
         lastComma = false
         lastDigit = false
         lastOperator = false
         lastEqual = false
-        priorityRequired = 0
-        values.clear()
+        nrBrackets = 0
+        leftBrackets = 0
+        rightBrackets = 0
     }
 
 
     //to filter unnecessary after comma values in the result
     @RequiresApi(Build.VERSION_CODES.N)
     fun fmt(d: Double): String {
-        if (d % 1.0 != 0.0000000)
-            return String.format("%.10s", d);
+        return if (d % 1.0 != 0.0000000)
+            String.format("%.10s", d)
         else
-            return String.format("%.0f", d);
+            String.format("%.0f", d)
 
     }
 
