@@ -19,10 +19,9 @@
         android:id="@+id/prevCalcText"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_weight="30"
         android:gravity="bottom"
         android:foregroundGravity="right"
-        android:textSize="25sp"
+        android:textSize="20sp"
         android:textColor="@color/lightGrey"
         android:background="#E1E2E6"
         tools:ignore="NestedWeights">
@@ -34,10 +33,12 @@
         android:id="@+id/calcText"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_weight="70"
         android:gravity="bottom"
         android:foregroundGravity="right"
-        android:textSize="50sp"
+        android:autoSizeTextType="uniform"
+        app:autoSizeMinTextSize="20sp"
+        app:autoSizeMaxTextSize="100sp"
+        app:autoSizeStepGranularity="2sp"
         android:textColor="@color/lightGreen"
         android:background="#E1E2E6">
 

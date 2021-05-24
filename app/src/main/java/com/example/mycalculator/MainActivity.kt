@@ -86,7 +86,9 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.M)
     fun bracketsClicked(view : View){
+        calcText.setTextColor(getColor(R.color.lightGrey))
         if((view as Button).text == "(") {
             calcText.append("(")
             rightBrackets++
