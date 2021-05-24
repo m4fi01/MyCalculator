@@ -1,14 +1,13 @@
 package com.example.mycalculator
 
 import android.os.Build
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.view.View
-import android.view.animation.AlphaAnimation
-import android.view.animation.Animation
+import android.view.animation.AnimationUtils
 import android.widget.Button
 import android.widget.Toast
 import androidx.annotation.RequiresApi
+import androidx.appcompat.app.AppCompatActivity
 import kotlinx.android.synthetic.main.activity_main.*
 
 class MainActivity : AppCompatActivity() {
@@ -51,9 +50,10 @@ class MainActivity : AppCompatActivity() {
     @RequiresApi(Build.VERSION_CODES.M)
     fun operatorClicked(view : View){
         calcText.setTextColor(getColor(R.color.lightGrey))
-        if(calcText.text.isEmpty()){
+        if(calcText.text.isEmpty() || lastOperator){
             if((view as Button) == btnPlus || view == btnMinus){
                 calcText.append(view.text)
+                lastOperator = false
             }
         }
         else if(lastDigit && !lastOperator){
@@ -81,32 +81,23 @@ class MainActivity : AppCompatActivity() {
 
     fun commaClicked(view : View){
         if(lastDigit && !lastComma){
-            calcText.append(",")
-
+            calcText.append(".")
             reset()
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.M)
+    @RequiresApi(Build.VERSION_CODES.N)
     fun equalClicked(view : View){
         if(lastDigit) {
             prevCalcText.append(calcText.text)
             interpretValues()
             calculate()
             prevCalcText.append("=\n")
-
-            //adding Animations
-            val anim = AlphaAnimation(1.0f, 0.0f)
-            anim.duration = 200
-            anim.repeatCount = 1
-            anim.repeatMode = Animation.REVERSE
-            anim.setAnimationListener(object : Animation.AnimationListener {
-                override fun onAnimationEnd(animation: Animation?) {calcText.setTextColor(getColor(R.color.lightGreen)) }
-                override fun onAnimationStart(animation: Animation?) { }
-                override fun onAnimationRepeat(animation: Animation?) {}
-            })
-            calcText.text = values[0]
+            //adding animation
+            val anim = AnimationUtils.loadAnimation(this,R.anim.slide_up)
             calcText.startAnimation(anim)
+            calcText.text = fmt(values[0].toDouble())
+            calcText.setTextColor(getColor(R.color.lightGreen))
 
             reset()
             lastEqual = true
@@ -118,16 +109,26 @@ class MainActivity : AppCompatActivity() {
         var i = calcText.text.iterator()
         var value : String= ""
         var c: String = ""
-
+        var prevOperator = false
+        //checking if the first number starts with a minus or plus
+        if(calcText.text[0].toString() in listOf("+","-"))
+            prevOperator = true
         //reading the text and separating numbers and operators, then putting them in #values to calculate later
         while(i.hasNext()){
             c = i.next().toString()
-            if(c !in operators)
-                value+=c
+            if(c in operators) {
+                if(prevOperator){
+                    value+=c
+                } else {
+                    values.add(value)
+                    values.add(c)
+                    value = ""
+                    prevOperator = true
+                }
+            }
             else {
-                values.add(value)
-                values.add(c)
-                value = ""
+                prevOperator = false
+                value+=c
             }
         }
         values.add(value)
@@ -177,6 +178,17 @@ class MainActivity : AppCompatActivity() {
         lastEqual = false
         priorityRequired = 0
         values.clear()
+    }
+
+
+    //to filter unnecessary after comma values in the result
+    @RequiresApi(Build.VERSION_CODES.N)
+    fun fmt(d: Double): String {
+        if (d % 1.0 != 0.0000000)
+            return String.format("%.10s", d);
+        else
+            return String.format("%.0f", d);
+
     }
 
     /*fun calculate(){
